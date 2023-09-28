@@ -5,7 +5,8 @@ from pymongo.errors import PyMongoError
 def add_to_database(mongo, array_of_dictionaries):
     try:
         collection = mongo.db.anemiaData
-        bulk_operations = []
+        bulk_inserts = []
+        bulk_updates = []
         for item in array_of_dictionaries:
             document = collection.find_one({"name": item["name"]})
             if document:
@@ -15,7 +16,7 @@ def add_to_database(mongo, array_of_dictionaries):
                         update_operations.append(
                             UpdateOne({"name": item["name"]}, {"$push": {key: value}})
                         )
-                bulk_operations.extend(update_operations)
+                bulk_updates.extend(update_operations)
             else:
                 new_document = {}
                 for key, value in item.items():
@@ -23,9 +24,12 @@ def add_to_database(mongo, array_of_dictionaries):
                         new_document[key] = value
                     else:
                         new_document[key] = [value]
-                bulk_operations.append(new_document)
-        if bulk_operations:
-            collection.insert_many(bulk_operations)
+                bulk_inserts.append(new_document)
+        if bulk_inserts:
+            collection.insert_many(bulk_inserts)
+        if bulk_updates:
+            collection.bulk_write(bulk_updates)
+        if bulk_inserts or bulk_updates:
             return {"status": "SUCCESS"}
         else:
             return {"status": "No data to insert or update"}

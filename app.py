@@ -6,6 +6,7 @@ import os
 import json
 import dataProcessing
 import dbHandling
+
 load_dotenv()
 
 
@@ -19,27 +20,30 @@ mongo = PyMongo(app)
 
 @app.route("/", methods=["GET"])
 def hello():
-    data = dbHandling.read_database(mongo)
-    if data:
+    try:
+        data = dbHandling.read_database(mongo)
         return jsonify(data), 201
-    else:
-        return "ERROR COMMUNICATING TO DATABASE"
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/upload", methods=["POST"])
 def recieveFile():
     if "csvFile" not in request.files:
-        return "No file part", 400
+        jsonify({"error": "No file part"}), 400
 
     recievedFile = request.files["csvFile"]
     if recievedFile.filename == "":
         return "No selected file", 400
     json_data = dataProcessing.process_csv_to_json(recievedFile)
     if json_data:
-        return dbHandling.add_to_database(mongo, json.loads(json_data))
+        dbHandling.add_to_database(mongo, json.loads(json_data))
+        return jsonify({"status": "SUCCESS"}), 200
     else:
-        return "JSON not formatted properly, try again"
+        return jsonify({"error": "JSON not formatted properly, try again"}), 400
 
 
 # if __name__ == "__main__":
 #     app.run(debug=False, host="0.0.0.0")
+
+# Also in development it works fine, but in production, in a single frontend session, when I send a csv in the server, the code runs properly and data is added to the mongo database, but when I send a second csv file, some of the data is added to the database but then I get an error "xhr.js:256     POST https://anemia-chartify-server.onrender.com/upload net::ERR_FAILED 502 (Bad Gateway)"

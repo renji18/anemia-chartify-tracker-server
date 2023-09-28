@@ -45,5 +45,3 @@ def recieveFile():
 
 # if __name__ == "__main__":
 #     app.run(debug=False, host="0.0.0.0")
-
-# Also in development it works fine, but in production, in a single frontend session, when I send a csv in the server, the code runs properly and data is added to the mongo database, but when I send a second csv file, some of the data is added to the database but then I get an error "xhr.js:256     POST https://anemia-chartify-server.onrender.com/upload net::ERR_FAILED 502 (Bad Gateway)"

@@ -25,7 +25,7 @@ def add_to_database(mongo, array_of_dictionaries):
                         new_document[key] = [value]
                 bulk_operations.append(new_document)
         if bulk_operations:
-            collection.bulk_write(bulk_operations)
+            collection.insert_many(bulk_operations)
             return {"status": "SUCCESS"}
         else:
             return {"status": "No data to insert or update"}

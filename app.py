@@ -40,5 +40,5 @@ def recieveFile():
         return "JSON not formatted properly, try again"
 
 
-if __name__ == "__main__":
-    app.run(debug=False, host="0.0.0.0")
+# if __name__ == "__main__":
+#     app.run(debug=False, host="0.0.0.0")

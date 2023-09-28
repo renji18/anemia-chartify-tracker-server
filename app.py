@@ -1,17 +1,18 @@
 from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from flask_cors import CORS
+from dotenv import load_dotenv
+import os
 import json
 import dataProcessing
 import dbHandling
+load_dotenv()
 
 
 app = Flask(__name__)
 CORS(app)
 
-app.config.from_pyfile("config.py")
-
-app.config["MONGO_URI"] = app.config.get("MONGO_URI")
+app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 
 mongo = PyMongo(app)
 

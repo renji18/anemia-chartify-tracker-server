@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from flask_cors import CORS
+from flask_bcrypt import Bcrypt
 from dotenv import load_dotenv
 import os
 import json
@@ -16,6 +17,7 @@ CORS(app)
 app.config["MONGO_URI"] = os.getenv("MONGO_URI")
 
 mongo = PyMongo(app)
+bcrypt = Bcrypt(app)
 
 
 @app.route("/", methods=["GET"])
@@ -25,6 +27,30 @@ def hello():
         return jsonify(data), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/login", methods=["POST"])
+def loginUser():
+    loggedIn = dbHandling.login_user(mongo, bcrypt, request.json)
+    if loggedIn == "Invalid Password":
+        return jsonify({"error": "Invalid password"}), 401
+    elif loggedIn == "User Logged In Successfully":
+        return jsonify({"success": "User logged in successfully"}), 201
+    elif loggedIn == "User Not Found":
+        return jsonify({"error": "User not found"}), 404
+    else:
+        return jsonify({"error": "Error connecting to database"}), 400
+
+
+@app.route("/register", methods=["POST"])
+def registerUser():
+    registered = dbHandling.register_user(mongo, bcrypt, request.json)
+    if registered == "success":
+        return jsonify({"success": "SUCCESS"}), 201
+    elif registered == "Username already exists":
+        return jsonify({"error": "User already exists"}), 401
+    else:
+        return jsonify({"error": "Error connecting to database"}), 400
 
 
 @app.route("/upload", methods=["POST"])

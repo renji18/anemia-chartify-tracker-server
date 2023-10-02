@@ -88,7 +88,6 @@ def add_to_database(mongo, array_of_dictionaries):
         raise Exception(f"Error processing the file: {str(e)}")
 
 
-
 def read_database(mongo):
     try:
         collection = mongo.db.anemiaData
@@ -96,3 +95,35 @@ def read_database(mongo):
         return documents
     except Exception as e:
         raise Exception(f"Error processing the file: {str(e)}")
+
+
+def register_user(mongo, bcrypt, userData):
+    try:
+        collection = mongo.db.userData
+        existing_user = collection.find_one({"username": userData["userName"]})
+        if existing_user:
+            return "Username already exists"
+        hashed_password = bcrypt.generate_password_hash(userData["password"]).decode(
+            "utf-8"
+        )
+        new_user = {"username": userData["userName"], "password": hashed_password}
+        collection.insert_one(new_user)
+        return "success"
+    except Exception as e:
+        raise Exception(f"Error registering user: {str(e)}")
+
+
+def login_user(mongo, bcrypt, userData):
+    try:
+        collection = mongo.db.userData
+        user = collection.find_one({"username": userData["userName"]})
+        if user:
+            hashed_password = user.get("password", "")
+            if bcrypt.check_password_hash(hashed_password, userData["password"]):
+                return "User Logged In Successfully"
+            else:
+                return "Invalid Password"
+        else:
+            return "User Not Found"
+    except Exception as e:
+        raise Exception(f"Error registering user: {str(e)}")

@@ -3,6 +3,15 @@ import pandas as pd
 
 
 def process_csv_to_json(csv_file):
+    """
+    Process a CSV file into JSON format.
+
+    Args:
+        csv_file (FileStorage): The uploaded CSV file.
+
+    Returns:
+        str: JSON representation of the processed data.
+    """
     try:
         file_bytes = csv_file.read()
         file_stream = io.BytesIO(file_bytes)

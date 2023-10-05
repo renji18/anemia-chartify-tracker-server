@@ -3,6 +3,15 @@ from pymongo.errors import PyMongoError
 
 
 def increment_roman_numeral(roman_numeral):
+    """
+    Increment a Roman numeral (I, II, III, IV).
+
+    Args:
+        roman_numeral (str): The Roman numeral to increment.
+
+    Returns:
+        str: The incremented Roman numeral.
+    """
     if roman_numeral == "I":
         return "II"
     elif roman_numeral == "II":
@@ -14,6 +23,16 @@ def increment_roman_numeral(roman_numeral):
 
 
 def add_to_database(mongo, array_of_dictionaries):
+    """
+    Add data to the database.
+
+    Args:
+        mongo: PyMongo database instance.
+        array_of_dictionaries (list): List of dictionaries to add to the database.
+
+    Returns:
+        dict: A status message.
+    """
     try:
         selected_document = array_of_dictionaries[0]["District"]
         collection = mongo.db.anemiaData
@@ -89,6 +108,15 @@ def add_to_database(mongo, array_of_dictionaries):
 
 
 def read_database(mongo):
+    """
+    Read data from the database.
+
+    Args:
+        mongo: PyMongo database instance.
+
+    Returns:
+        list: A list of documents retrieved from the database.
+    """
     try:
         collection = mongo.db.anemiaData
         documents = list(collection.find({}, {"_id": 0}))
@@ -98,6 +126,17 @@ def read_database(mongo):
 
 
 def register_user(mongo, bcrypt, userData):
+    """
+    Register a user in the database.
+
+    Args:
+        mongo: PyMongo database instance.
+        bcrypt: Bcrypt instance for password hashing.
+        userData (dict): User registration data.
+
+    Returns:
+        str: A status message.
+    """
     try:
         collection = mongo.db.userData
         existing_user = collection.find_one({"username": userData["userName"]})
@@ -114,6 +153,17 @@ def register_user(mongo, bcrypt, userData):
 
 
 def login_user(mongo, bcrypt, userData):
+    """
+    Log in a user.
+
+    Args:
+        mongo: PyMongo database instance.
+        bcrypt: Bcrypt instance for password hashing.
+        userData (dict): User login data.
+
+    Returns:
+        str: A status message.
+    """
     try:
         collection = mongo.db.userData
         user = collection.find_one({"username": userData["userName"]})

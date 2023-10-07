@@ -22,7 +22,20 @@ def increment_roman_numeral(roman_numeral):
         raise ValueError("Invalid Roman numeral")
 
 
-def add_to_database(mongo, array_of_dictionaries):
+def add_to_database(mongo, array_of_dictionaries, type):
+    if type == "quarterly":
+        to_quarterly(mongo, array_of_dictionaries)
+    elif type == "monthly":
+        to_monthly(mongo, array_of_dictionaries)
+    else:
+        raise ValueError("Invalid type recieved")
+
+
+def to_monthly(mongo, array_of_dictionaries):
+    pass
+
+
+def to_quarterly(mongo, array_of_dictionaries):
     """
     Add data to the database.
 

@@ -53,31 +53,17 @@ def registerUser():
         return jsonify({"error": "Error connecting to database"}), 400
 
 
-@app.route("/uploadQuarterly", methods=["POST"])
+@app.route("/upload", methods=["POST"])
 def recieveFile():
     if "csvFile" not in request.files:
-        jsonify({"error": "No file part"}), 400
+        jsonify({"error": "No file part"}), 404
     recievedFile = request.files["csvFile"]
     if recievedFile.filename == "":
-        return "No selected file", 400
-    json_data = dataProcessing.process_csv_to_json(recievedFile)
+        return "No selected file", 401
+    type = request.form["type"]
+    json_data = dataProcessing.process_csv_to_json(recievedFile, type)
     if json_data:
-        dbHandling.add_to_database(mongo, json.loads(json_data), "quarterly")
-        return jsonify({"status": "SUCCESS"}), 200
-    else:
-        return jsonify({"error": "JSON not formatted properly, try again"}), 400
-
-
-@app.route("/uploadMonthly", methods=["POST"])
-def recieveFile():
-    if "csvFile" not in request.files:
-        jsonify({"error": "No file part"}), 400
-    recievedFile = request.files["csvFile"]
-    if recievedFile.filename == "":
-        return "No selected file", 400
-    json_data = dataProcessing.process_csv_to_json(recievedFile)
-    if json_data:
-        dbHandling.add_to_database(mongo, json.loads(json_data), "monthly")
+        dbHandling.add_to_database(mongo, json.loads(json_data), type)
         return jsonify({"status": "SUCCESS"}), 200
     else:
         return jsonify({"error": "JSON not formatted properly, try again"}), 400

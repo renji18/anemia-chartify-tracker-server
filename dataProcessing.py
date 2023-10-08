@@ -2,16 +2,16 @@ import io
 import pandas as pd
 
 
-def process_csv_to_json(csv_file):
-    """
-    Process a CSV file into JSON format.
+def process_csv_to_json(csv_file, type):
+    if(type == "quarterly"):
+        return quarterly_processor(csv_file)
+    elif(type== "monthly"):
+        return monthly_processor(csv_file)
+    else:
+        raise ValueError("Invalid type recieved")
 
-    Args:
-        csv_file (FileStorage): The uploaded CSV file.
 
-    Returns:
-        str: JSON representation of the processed data.
-    """
+def quarterly_processor(csv_file):
     try:
         file_bytes = csv_file.read()
         file_stream = io.BytesIO(file_bytes)
@@ -34,3 +34,6 @@ def process_csv_to_json(csv_file):
         return json_data
     except Exception as e:
         raise Exception(f"Error processing the file: {str(e)}")
+
+def monthly_processor(csv_file):
+    pass

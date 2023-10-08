@@ -20,15 +20,18 @@ mongo = PyMongo(app)
 bcrypt = Bcrypt(app)
 
 
+# route to retrieve data
 @app.route("/", methods=["GET"])
-def hello():
+def getData():
     try:
-        data = dbHandling.read_database(mongo)
+        type = request.args.get('type')
+        data = dbHandling.read_database(mongo, type)
         return jsonify(data), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
+# route for user login
 @app.route("/login", methods=["POST"])
 def loginUser():
     loggedIn = dbHandling.login_user(mongo, bcrypt, request.json)
@@ -42,6 +45,7 @@ def loginUser():
         return jsonify({"error": "Error connecting to database"}), 400
 
 
+# route for user registration
 @app.route("/register", methods=["POST"])
 def registerUser():
     registered = dbHandling.register_user(mongo, bcrypt, request.json)
@@ -53,6 +57,7 @@ def registerUser():
         return jsonify({"error": "Error connecting to database"}), 400
 
 
+# route to recieve and process uploaded files
 @app.route("/upload", methods=["POST"])
 def recieveFile():
     if "csvFile" not in request.files:

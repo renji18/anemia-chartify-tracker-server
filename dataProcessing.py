@@ -3,20 +3,28 @@ import pandas as pd
 
 
 def process_csv_to_json(csv_file, type):
-    if(type == "quarterly"):
-        return quarterly_processor(csv_file)
-    elif(type== "monthly"):
-        return monthly_processor(csv_file)
-    else:
-        raise ValueError("Invalid type recieved")
+    """
+    This function processes a CSV file, extracts specific data from it, and converts it into a JSON format. It also handles different data processing based on the provided type parameter.
 
 
-def quarterly_processor(csv_file):
+    The function takes a CSV file object csv_file and a type parameter (either "quarterly" or "monthly").
+
+    It reads the CSV file, cleans the data by selecting specific rows (14:48 for "quarterly" and 13:47 for "monthly"), and renames columns for consistency.
+
+    The cleaned data is then converted to a JSON format using the Pandas library's to_json method.
+
+    Any errors during this process are caught and re-raised with an informative error message.
+    """
     try:
         file_bytes = csv_file.read()
         file_stream = io.BytesIO(file_bytes)
         df = pd.read_csv(file_stream)
-        cleaned_df = df[14:48].copy()
+        if type == "quarterly":
+            cleaned_df = df[14:48].copy()
+        elif type == "monthly":
+            cleaned_df = df[13:47].copy()
+        else:
+            raise ValueError("Invalid type passed")
         cleaned_df.rename(
             columns={
                 "Unnamed: 1": "Children (6 - 59 months)",
@@ -34,6 +42,3 @@ def quarterly_processor(csv_file):
         return json_data
     except Exception as e:
         raise Exception(f"Error processing the file: {str(e)}")
-
-def monthly_processor(csv_file):
-    pass

@@ -1,8 +1,19 @@
 from pymongo import UpdateOne
 from pymongo.errors import PyMongoError
 
+"""
+    The website to convert the pdfs to csvs
+    https://products.groupdocs.app/conversion/pdf-to-csv
+"""
+
 
 def increment_roman_numeral(roman_numeral):
+    '''
+    This function takes a Roman numeral as input and increments it by one numeral,
+    e.g., "I" to "II," "II" to "III," and "III" to "IV.
+
+    The function uses conditional statements to check the input numeral and increments it accordingly. If an invalid numeral is provided, it raises a ValueError with an error message.
+    "'''
     if roman_numeral == "I":
         return "II"
     elif roman_numeral == "II":
@@ -14,28 +25,36 @@ def increment_roman_numeral(roman_numeral):
 
 
 def add_to_database(mongo, array_of_dictionaries, type):
-    if type == "quarterly":
-        return to_quarterly(mongo, array_of_dictionaries)
-    elif type == "monthly":
-        return to_monthly(mongo, array_of_dictionaries)
-    else:
-        raise ValueError("Invalid type recieved")
+    """
+    This function adds data to a MongoDB collection based on the provided type parameter.
+    It handles both quarterly and monthly data differently.
 
+    The function determines the appropriate MongoDB collection based on the type parameter (either "quarterly" or "monthly").
 
-def to_quarterly(mongo, array_of_dictionaries):
+    It then processes and updates the data in the collection. For quarterly data, it also increments the quarter value (e.g., from "2021_I" to "2021_II").
+
+    The function uses bulk updates for efficiency, and it handles exceptions such as MongoDB errors and invalid type values.
+    """
     try:
         selected_document = array_of_dictionaries[0]["District"]
-        collection = mongo.db.anemiaDataQuarterly
+        if type == "quarterly":
+            collection = mongo.db.anemiaDataQuarterly
+        elif type == "monthly":
+            collection = mongo.db.anemiaDataMonthly
+        else:
+            raise ValueError("Invalid type passed")
         bulk_updates = []
 
         document = collection.find_one({"state": selected_document})
 
         if document:
             data = document.get("data", [])
-            quarters = document.get("quarters", [])
+            if type == "quarterly":
+                quarters = document.get("quarters", [])
         else:
             data = []
-            quarters = []
+            if type == "quarterly":
+                quarters = []
 
         for item in array_of_dictionaries:
             matching_object = next(
@@ -56,23 +75,32 @@ def to_quarterly(mongo, array_of_dictionaries):
                         new_item[key] = [value]
                 data.append(new_item)
 
-        if quarters == []:
-            quarters.append("2021_I")
-        else:
-            last_quarter = quarters[-1]
-            year, roman_numeral = last_quarter.split("_")
-            if roman_numeral == "IV":
-                year = str(int(year) + 1)
-                roman_numeral = "I"
+        if type == "quarterly":
+            if quarters == []:
+                quarters.append("2021_I")
             else:
-                roman_numeral = increment_roman_numeral(roman_numeral)
-            quarters.append(f"{year}_{roman_numeral}")
+                last_quarter = quarters[-1]
+                year, roman_numeral = last_quarter.split("_")
+                if roman_numeral == "IV":
+                    year = str(int(year) + 1)
+                    roman_numeral = "I"
+                else:
+                    roman_numeral = increment_roman_numeral(roman_numeral)
+                quarters.append(f"{year}_{roman_numeral}")
 
-        update_document = {
-            "state": selected_document,
-            "data": data,
-            "quarters": quarters,
-        }
+        if type == "quarterly":
+            update_document = {
+                "state": selected_document,
+                "data": data,
+                "quarters": quarters,
+            }
+        elif type == "monthly":
+            update_document = {
+                "state": selected_document,
+                "data": data,
+            }
+        else:
+            raise ValueError("Invalid type passed")
 
         if document:
             bulk_updates.append(
@@ -97,13 +125,22 @@ def to_quarterly(mongo, array_of_dictionaries):
         raise Exception(f"Error processing the file: {str(e)}")
 
 
-def to_monthly(mongo, array_of_dictionaries):
-    pass
+def read_database(mongo, type):
+    """
+    This function retrieves data from a MongoDB collection based on the provided type parameter (either "quarterly" or "monthly")
 
 
-def read_database(mongo):
+    The function determines the appropriate MongoDB collection based on the type parameter and retrieves documents from that collection.
+
+    It handles exceptions and raises a ValueError for an invalid type value.
+    """
     try:
-        collection = mongo.db.anemiaDataQuarterly
+        if type == "quarterly":
+            collection = mongo.db.anemiaDataQuarterly
+        elif type == "monthly":
+            collection = mongo.db.anemiaDataMonthly
+        else:
+            raise ValueError("Invalid type passed")
         documents = list(collection.find({}, {"_id": 0}))
         return documents
     except Exception as e:
@@ -111,6 +148,14 @@ def read_database(mongo):
 
 
 def register_user(mongo, bcrypt, userData):
+    """
+    This function registers a new user in a MongoDB collection by hashing the user's password and storing it securely.
+
+
+    It checks if the provided username already exists in the database.
+
+    If not, it hashes the user's password and inserts the user data into the "userData" collection.
+    """
     try:
         collection = mongo.db.userData
         existing_user = collection.find_one({"username": userData["userName"]})
@@ -127,6 +172,13 @@ def register_user(mongo, bcrypt, userData):
 
 
 def login_user(mongo, bcrypt, userData):
+    """
+    This function handles user login by checking the provided username and password against the stored data in a MongoDB collection.
+
+
+    It first checks if the provided username exists in the database.
+    If the username exists, it compares the hashed password with the provided password using the bcrypt library.
+    """
     try:
         collection = mongo.db.userData
         user = collection.find_one({"username": userData["userName"]})

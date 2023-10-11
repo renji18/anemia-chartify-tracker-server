@@ -43,6 +43,7 @@ def add_to_database(mongo, array_of_dictionaries, type):
             collection = mongo.db.anemiaDataMonthly
         else:
             raise ValueError("Invalid type passed")
+
         bulk_updates = []
 
         document = collection.find_one({"state": selected_document})
@@ -58,7 +59,8 @@ def add_to_database(mongo, array_of_dictionaries, type):
 
         for item in array_of_dictionaries:
             matching_object = next(
-                (obj for obj in data if obj.get("District") == item["District"]), None
+                (obj for obj in data if obj.get("District") == item["District"]),
+                None,
             )
             if matching_object:
                 for (
@@ -66,13 +68,29 @@ def add_to_database(mongo, array_of_dictionaries, type):
                     value,
                 ) in item.items():
                     if key != "District":
-                        matching_object.setdefault(key, [])
-                        matching_object[key].append(value)
+                        if type == "quarterly":
+                            matching_object.setdefault(key, [])
+                            matching_object[key].append(value)
+                        elif type == "monthly":
+                            if len(matching_object[key][-1]["data"]) < 12:
+                                matching_object[key][-1]["data"].append(value)
+                            else:
+                                last_year = matching_object[key][-1]["year"]
+                                new_year = last_year + 1
+                                new_obj = {"year": new_year, "data": [value]}
+                                matching_object[key].append(new_obj)
+                        else:
+                            raise ValueError("Invalid type passed")
             else:
                 new_item = {"District": item["District"]}
                 for key, value in item.items():
                     if key != "District":
-                        new_item[key] = [value]
+                        if type == "quarterly":
+                            new_item[key] = [value]
+                        elif type == "monthly":
+                            new_item[key] = [{"year": 2023, "data": [value]}]
+                        else:
+                            raise ValueError("Invalid type passed")
                 data.append(new_item)
 
         if type == "quarterly":

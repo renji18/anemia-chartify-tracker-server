@@ -24,7 +24,7 @@ bcrypt = Bcrypt(app)
 @app.route("/", methods=["GET"])
 def getData():
     try:
-        type = request.args.get('type')
+        type = request.args.get("type")
         data = dbHandling.read_database(mongo, type)
         return jsonify(data), 201
     except Exception as e:
@@ -66,7 +66,7 @@ def recieveFile():
     if recievedFile.filename == "":
         return "No selected file", 401
     type = request.form["type"]
-    json_data = dataProcessing.process_csv_to_json(recievedFile, type)
+    json_data = dataProcessing.process_csv_to_json(recievedFile)
     if json_data:
         dbHandling.add_to_database(mongo, json.loads(json_data), type)
         return jsonify({"status": "SUCCESS"}), 200

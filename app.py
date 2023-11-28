@@ -7,6 +7,7 @@ import os
 import json
 import dataProcessing
 import dbHandling
+import dataExtractor
 
 load_dotenv()
 
@@ -72,6 +73,17 @@ def recieveFile():
         return jsonify({"status": "SUCCESS"}), 200
     else:
         return jsonify({"error": "JSON not formatted properly, try again"}), 400
+
+
+# route to download data into excel
+@app.route("/download", methods=["GET"])
+def exportFile():
+    try:
+        data = dataExtractor.read_database(mongo)
+        response = dataExtractor.modifyToExcel(data)
+        return response, 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # if __name__ == "__main__":

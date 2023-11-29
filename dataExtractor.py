@@ -1,6 +1,9 @@
 import pandas as pd
 from flask import make_response
 from io import BytesIO
+import openpyxl
+from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.styles import Alignment
 
 month_names = [
     "Jan",
@@ -117,7 +120,42 @@ def modifyToExcel(data):
         final_df = final_df.reindex(columns=column_order, fill_value=None)
 
         excel_output = BytesIO()
-        final_df.to_excel(excel_output, index=False)
+
+        with pd.ExcelWriter(excel_output, engine="openpyxl") as writer:
+            final_df.to_excel(writer, index=False, sheet_name="Sheet1")
+
+            worksheet = writer.sheets["Sheet1"]
+
+            (max_row, max_col) = final_df.shape
+
+            table_range = f"A1:{openpyxl.utils.get_column_letter(max_col)}{max_row}"
+
+            table = Table(displayName="MyTable", ref=table_range)
+            style = TableStyleInfo(
+                name="TableStyleMedium9",
+                showFirstColumn=False,
+                showLastColumn=False,
+                showRowStripes=True,
+                showColumnStripes=True,
+            )
+            table.tableStyleInfo = style
+            worksheet.add_table(table)
+
+            for row_num in range(1, max_row + 1):
+                for col_num in range(max_col):
+                    cell_coord = openpyxl.utils.get_column_letter(col_num + 1) + str(
+                        row_num + 1
+                    )
+                    worksheet[cell_coord].alignment = Alignment(horizontal="center")
+
+            for col_num, value in enumerate(final_df.columns.values):
+                column_letter = openpyxl.utils.get_column_letter(col_num + 1)
+                max_length = max(
+                    final_df[value].astype(str).apply(len).max(), len(value)
+                )
+                adjusted_width = max_length + 2
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+
         excel_output.seek(0)
 
         response = make_response(excel_output.read())

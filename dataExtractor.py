@@ -110,16 +110,15 @@ def modifyToExcel(data):
             state_dfs.append(state_df)
 
         final_df = pd.concat(state_dfs, ignore_index=True)
-        # final_df = final_df.iloc[:, :-1]
+        columns_to_keep = ["Month", "Year", "State", "District", "Index Value"]
+        final_df = final_df[columns_to_keep]
 
         excel_output = BytesIO()
         final_df.to_excel(excel_output, index=False)
         excel_output.seek(0)
 
         response = make_response(excel_output.read())
-        response.headers[
-            "Content-Disposition"
-        ] = "attachment; filename=output.xlsx"
+        response.headers["Content-Disposition"] = "attachment; filename=output.xlsx"
         response.headers[
             "Content-Type"
         ] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -131,6 +130,7 @@ def modifyToExcel(data):
 
         print("Error details", traceback.format_exc())
         raise Exception(f"Error in file: {str(e)}")
+
 
 # def modifyToExcel(data):
 #     try:

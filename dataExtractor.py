@@ -110,7 +110,7 @@ def modifyToExcel(data):
             state_dfs.append(state_df)
 
         final_df = pd.concat(state_dfs, ignore_index=True)
-        final_df = final_df.iloc[:, :-1]
+        # final_df = final_df.iloc[:, :-1]
 
         excel_output = BytesIO()
         final_df.to_excel(excel_output, index=False)
@@ -126,14 +126,11 @@ def modifyToExcel(data):
 
         return response
 
-        # final_df.to_excel("output.xlsx", index=False)
-
     except Exception as e:
         import traceback
 
         print("Error details", traceback.format_exc())
         raise Exception(f"Error in file: {str(e)}")
-
 
 # def modifyToExcel(data):
 #     try:
@@ -159,17 +156,38 @@ def modifyToExcel(data):
 #                         df.drop(columns=["Month", "District"]).sum(axis=1).astype(float)
 #                     )
 #                     df["Year"] = year
-#                     df = df[["Month", "District", "Index Value", "Year"]]
+#                     df = df[["Month", "Year", "District", "Index Value"]]
 
 #                     year_dfs.append(df)
-#                 # empty_row = pd.Series(index=year_dfs[-1].columns)
-#                 # year_dfs.append(empty_row)
+#                 empty_row = pd.Series([None] * df.shape[1], index=df.columns)
+#                 year_dfs.append(empty_row)
+#             for df in year_dfs:
+#                 df["State"] = state_name
+#             year_dfs = [
+#                 df[["Month", "Year", "State", "District", "Index Value"]]
+#                 for df in year_dfs
+#             ]
 #             state_df = pd.concat(year_dfs, ignore_index=True)
-#             state_df["State"] = state_name
 #             state_dfs.append(state_df)
 
 #         final_df = pd.concat(state_dfs, ignore_index=True)
-#         final_df.to_excel("output.xlsx", index=False)
+#         final_df = final_df.iloc[:, :-1]
+
+#         excel_output = BytesIO()
+#         final_df.to_excel(excel_output, index=False)
+#         excel_output.seek(0)
+
+#         response = make_response(excel_output.read())
+#         response.headers[
+#             "Content-Disposition"
+#         ] = "attachment; filename=output.xlsx"
+#         response.headers[
+#             "Content-Type"
+#         ] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+#         return response
+
+#         # final_df.to_excel("output.xlsx", index=False)
 
 #     except Exception as e:
 #         import traceback

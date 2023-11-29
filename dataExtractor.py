@@ -113,6 +113,9 @@ def modifyToExcel(data):
         columns_to_keep = ["Month", "Year", "State", "District", "Index Value"]
         final_df = final_df[columns_to_keep]
 
+        column_order = ["Month", "Year", "State", "District", "Index Value"]
+        final_df = final_df.reindex(columns=column_order, fill_value=None)
+
         excel_output = BytesIO()
         final_df.to_excel(excel_output, index=False)
         excel_output.seek(0)

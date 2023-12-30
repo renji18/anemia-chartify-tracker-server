@@ -88,7 +88,7 @@ def add_to_database(mongo, array_of_dictionaries, type):
                         if type == "quarterly":
                             new_item[key] = [value]
                         elif type == "monthly":
-                            new_item[key] = [{"year": 2023, "data": [value]}]
+                            new_item[key] = [{"year": 2021, "data": [value]}]
                         else:
                             raise ValueError("Invalid type passed")
                 data.append(new_item)

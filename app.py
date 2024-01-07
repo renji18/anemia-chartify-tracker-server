@@ -80,11 +80,12 @@ def recieveFile():
 def exportFile():
     try:
         data = dataExtractor.read_database(mongo)
+        print(data)
         response = dataExtractor.modifyToExcel(data)
         return response, 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-# if __name__ == "__main__":
-#     app.run(debug=False, host="0.0.0.0")
+if __name__ == "__main__":
+    app.run(debug=False, host="0.0.0.0")

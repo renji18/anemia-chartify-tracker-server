@@ -75,6 +75,7 @@ def read_database(mongo):
 
 
 def modifyToExcel(data):
+    print(data)
     try:
         state_dfs = []
         for state_data in data:
@@ -84,16 +85,8 @@ def modifyToExcel(data):
             for district_data in state_data["districtsData"]:
                 district_name = district_data["district"]
 
-                prev_year = None
-
                 for index_value in district_data["indexValues"]:
                     year = index_value["year"]
-
-                    if prev_year is not None and prev_year != year:
-                        empty_row = pd.Series([None] * df.shape[1], index=df.columns)
-                        year_dfs.append(empty_row)
-
-                    prev_year = year
                     index_value_data = index_value["singleYearData"]
 
                     df = pd.DataFrame(index_value_data)
@@ -109,8 +102,6 @@ def modifyToExcel(data):
                     df = df[["Month", "Year", "District", "Index Value"]]
 
                     year_dfs.append(df)
-                empty_row = pd.Series([None] * df.shape[1], index=df.columns)
-                year_dfs.append(empty_row)
             for df in year_dfs:
                 df["State"] = state_name
             year_dfs = [

@@ -5,6 +5,7 @@ import openpyxl
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.styles import Alignment
 
+# List of month names
 month_names = [
     "Jan",
     "Feb",
@@ -21,17 +22,56 @@ month_names = [
 ]
 
 
-def read_database(mongo):
+def singleCategoryFormatter(values, formatted_district_data, catName):
     """
-    This function retrieves data from a MongoDB collection based on the provided type parameter (either "quarterly" or "monthly")
+    Formats the data for a single category (e.g., index values, mothers values).
 
+    Args:
+        values (list): List of dictionaries containing data for each year.
+        formatted_district_data (dict): Dictionary to store formatted data.
+        catName (str): Name of the category.
 
-    The function determines the appropriate MongoDB collection based on the type parameter and retrieves documents from that collection.
+    Returns:
+        dict: Formatted district data.
 
-    It handles exceptions and raises a ValueError for an invalid type value.
+    Raises:
+        Exception: If an error occurs during processing.
     """
     try:
+        for value in values:
+            year = value["year"]
+            monthly_data = value["data"]
+
+            formatted_index_value = {"year": year, "singleYearData": []}
+
+            for i, val in enumerate(monthly_data):
+                month = month_names[i] if i < len(month_names) else f"Month_{i + 1}"
+                formatted_monthly_data = {month: val}
+                formatted_index_value["singleYearData"].append(formatted_monthly_data)
+            formatted_district_data[catName].append(formatted_index_value)
+        return formatted_district_data
+
+    except Exception as e:
+        raise Exception(f"Error processing the file: {str(e)}")
+
+
+def read_database(mongo):
+    """
+    Retrieves data from a MongoDB collection based on the provided type parameter.
+
+    Args:
+        mongo: MongoDB instance.
+
+    Returns:
+        list: List of formatted data.
+
+    Raises:
+        Exception: If an error occurs during processing.
+    """
+    try:
+        # MongoDB collection for monthly anemia data
         collection = mongo.db.anemiaDataMonthly
+        # Retrieve documents from the collection
         documents = list(collection.find({}, {"_id": 0}))
 
         output_data = []
@@ -44,27 +84,78 @@ def read_database(mongo):
 
             for district_data in districts_data:
                 district_name = district_data["District"]
-                index_values = district_data["Index Value"]
+                index_values = district_data.get("Index Value", [])
+                rank_values = district_data.get("Rank", [])
+                children6_59_months_values = district_data.get(
+                    "Children (6 - 59 months)", []
+                )
+                children6_9_years_values = district_data.get(
+                    "Children (6 - 9 years)", []
+                )
+                adolescents_10_19_years_values = district_data.get(
+                    "Adolescents (10 - 19 years)", []
+                )
+                pregnant_women_values = district_data.get("Pregnant Women", [])
+                mothers_values = district_data.get("Mothers", [])
 
-                formatted_district_data = {"district": district_name, "indexValues": []}
+                formatted_district_data = {
+                    "district": district_name,
+                    "index_values": [],
+                    "rank_values": [],
+                    "children6_59_months_values": [],
+                    "children6_9_years_values": [],
+                    "adolescents_10_19_years_values": [],
+                    "pregnant_women_values": [],
+                    "mothers_values": [],
+                }
 
-                for index_value in index_values:
-                    year = index_value["year"]
-                    monthly_data = index_value["data"]
+                # Format Index Values
+                formatted_district_data = singleCategoryFormatter(
+                    index_values, formatted_district_data, "index_values"
+                )
 
-                    formatted_index_value = {"year": year, "singleYearData": []}
+                # Format children months
+                formatted_district_data = singleCategoryFormatter(
+                    children6_59_months_values,
+                    formatted_district_data,
+                    "children6_59_months_values",
+                )
 
-                    for i, value in enumerate(monthly_data):
-                        month = (
-                            month_names[i] if i < len(month_names) else f"Month_{i + 1}"
-                        )
-                        formatted_monthly_data = {month: value}
-                        formatted_index_value["singleYearData"].append(
-                            formatted_monthly_data
-                        )
-                    formatted_district_data["indexValues"].append(
-                        formatted_index_value,
-                    )
+                # Format children years
+                formatted_district_data = singleCategoryFormatter(
+                    children6_9_years_values,
+                    formatted_district_data,
+                    "children6_9_years_values",
+                )
+
+                # Format adolescents years
+                formatted_district_data = singleCategoryFormatter(
+                    adolescents_10_19_years_values,
+                    formatted_district_data,
+                    "adolescents_10_19_years_values",
+                )
+
+                # Format pregnant women
+                formatted_district_data = singleCategoryFormatter(
+                    pregnant_women_values,
+                    formatted_district_data,
+                    "pregnant_women_values",
+                )
+
+                # Format mothers
+                formatted_district_data = singleCategoryFormatter(
+                    mothers_values,
+                    formatted_district_data,
+                    "mothers_values",
+                )
+
+                # Format state rank
+                formatted_district_data = singleCategoryFormatter(
+                    rank_values,
+                    formatted_district_data,
+                    "rank_values",
+                )
+
                 formatted_state_data.append(formatted_district_data)
             output_data.append(
                 {"state": state_name, "districtsData": formatted_state_data}
@@ -75,7 +166,18 @@ def read_database(mongo):
 
 
 def modifyToExcel(data):
-    print(data)
+    """
+    Modifies the provided data and exports it to an Excel file.
+
+    Args:
+        data (list): List of formatted data.
+
+    Returns:
+        flask.Response: Excel file as a Flask response.
+
+    Raises:
+        Exception: If an error occurs during processing.
+    """
     try:
         state_dfs = []
         for state_data in data:
@@ -85,37 +187,126 @@ def modifyToExcel(data):
             for district_data in state_data["districtsData"]:
                 district_name = district_data["district"]
 
-                for index_value in district_data["indexValues"]:
+                rows = []
+                for (
+                    index_value,
+                    mothers_value,
+                    children_months_value,
+                    children_years_value,
+                    adolescents_value,
+                    pregnant_women_value,
+                    rank_value,
+                ) in zip(
+                    district_data["index_values"],
+                    district_data["mothers_values"],
+                    district_data["children6_59_months_values"],
+                    district_data["children6_9_years_values"],
+                    district_data["adolescents_10_19_years_values"],
+                    district_data["pregnant_women_values"],
+                    district_data["rank_values"],
+                ):
                     year = index_value["year"]
                     index_value_data = index_value["singleYearData"]
+                    mothers_data = mothers_value["singleYearData"]
+                    children_months_data = children_months_value["singleYearData"]
+                    children_years_data = children_years_value["singleYearData"]
+                    adolescents_data = adolescents_value["singleYearData"]
+                    pregnant_women_data = pregnant_women_value["singleYearData"]
+                    rank_data = rank_value["singleYearData"]
 
-                    df = pd.DataFrame(index_value_data)
-                    df["Month"] = df.columns
-                    df["Month"] = df["Month"].apply(
-                        lambda x: x if x != "singleYearData" else None
-                    )
-                    df["District"] = district_name
-                    df["Index Value"] = (
-                        df.drop(columns=["Month", "District"]).sum(axis=1).astype(float)
-                    )
-                    df["Year"] = year
-                    df = df[["Month", "Year", "District", "Index Value"]]
+                    for i, month in enumerate(month_names):
+                        index_value = (
+                            index_value_data[i] if i < len(index_value_data) else None
+                        )
+                        mothers_value = (
+                            mothers_data[i] if i < len(mothers_data) else None
+                        )
 
-                    year_dfs.append(df)
+                        children_month_value = (
+                            children_months_data[i]
+                            if i < len(children_months_data)
+                            else None
+                        )
+                        children_year_value = (
+                            children_years_data[i]
+                            if i < len(children_years_data)
+                            else None
+                        )
+                        adolescent_value = (
+                            adolescents_data[i] if i < len(adolescents_data) else None
+                        )
+                        pregnant_woman_value = (
+                            pregnant_women_data[i]
+                            if i < len(pregnant_women_data)
+                            else None
+                        )
+                        ranks_value = rank_data[i] if i < len(rank_data) else None
+
+                        rows.append(
+                            {
+                                "Month": month,
+                                "Year": year,
+                                "District": district_name,
+                                "Index Value": index_value[month]
+                                if index_value
+                                else None,
+                                "Mothers": mothers_value[month]
+                                if mothers_value
+                                else None,
+                                "Children (6 - 59 months)": children_month_value[month]
+                                if children_month_value
+                                else None,
+                                "Children (6 - 9 years)": children_year_value[month]
+                                if children_year_value
+                                else None,
+                                "Adolescents": adolescent_value[month]
+                                if adolescent_value
+                                else None,
+                                "Pregnant Women": pregnant_woman_value[month]
+                                if pregnant_woman_value
+                                else None,
+                                "Rank": ranks_value[month] if ranks_value else None,
+                            }
+                        )
+
+                df = pd.DataFrame(rows)
+                year_dfs.append(df)
+
             for df in year_dfs:
                 df["State"] = state_name
-            year_dfs = [
-                df[["Month", "Year", "State", "District", "Index Value"]]
-                for df in year_dfs
-            ]
+
             state_df = pd.concat(year_dfs, ignore_index=True)
             state_dfs.append(state_df)
 
         final_df = pd.concat(state_dfs, ignore_index=True)
-        columns_to_keep = ["Month", "Year", "State", "District", "Index Value"]
+        columns_to_keep = [
+            "Month",
+            "Year",
+            "State",
+            "District",
+            "Index Value",
+            "Mothers",
+            "Children (6 - 59 months)",
+            "Children (6 - 9 years)",
+            "Adolescents",
+            "Pregnant Women",
+            "Rank",
+        ]
         final_df = final_df[columns_to_keep]
 
-        column_order = ["Month", "Year", "State", "District", "Index Value"]
+        column_order = [
+            "Month",
+            "Year",
+            "State",
+            "District",
+            "Rank",
+            "Index Value",
+            "Children (6 - 59 months)",
+            "Children (6 - 9 years)",
+            "Adolescents",
+            "Pregnant Women",
+            "Mothers",
+        ]
         final_df = final_df.reindex(columns=column_order, fill_value=None)
 
         excel_output = BytesIO()

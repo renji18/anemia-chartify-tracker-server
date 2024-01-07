@@ -8,12 +8,13 @@ from pymongo.errors import PyMongoError
 
 
 def increment_roman_numeral(roman_numeral):
-    '''
+    """
     This function takes a Roman numeral as input and increments it by one numeral,
     e.g., "I" to "II," "II" to "III," and "III" to "IV.
 
-    The function uses conditional statements to check the input numeral and increments it accordingly. If an invalid numeral is provided, it raises a ValueError with an error message.
-    "'''
+    The function uses conditional statements to check the input numeral and increments it accordingly.
+    If an invalid numeral is provided, it raises a ValueError with an error message.
+    """
     if roman_numeral == "I":
         return "II"
     elif roman_numeral == "II":
@@ -36,7 +37,10 @@ def add_to_database(mongo, array_of_dictionaries, type):
     The function uses bulk updates for efficiency, and it handles exceptions such as MongoDB errors and invalid type values.
     """
     try:
+        # Extracting the state name for MongoDB collection selection
         selected_document = array_of_dictionaries[0]["District"]
+
+        # Selecting the MongoDB collection based on the provided type
         if type == "quarterly":
             collection = mongo.db.anemiaDataQuarterly
         elif type == "monthly":
@@ -44,10 +48,9 @@ def add_to_database(mongo, array_of_dictionaries, type):
         else:
             raise ValueError("Invalid type passed")
 
+        # Initializing empty lists and variables
         bulk_updates = []
-
         document = collection.find_one({"state": selected_document})
-
         if document:
             data = document.get("data", [])
             if type == "quarterly":
@@ -57,6 +60,7 @@ def add_to_database(mongo, array_of_dictionaries, type):
             if type == "quarterly":
                 quarters = []
 
+        # Iterating through the input data and updating the MongoDB collection
         for item in array_of_dictionaries:
             matching_object = next(
                 (obj for obj in data if obj.get("District") == item["District"]),
@@ -93,6 +97,7 @@ def add_to_database(mongo, array_of_dictionaries, type):
                             raise ValueError("Invalid type passed")
                 data.append(new_item)
 
+        # Incrementing quarterly data if applicable
         if type == "quarterly":
             if quarters == []:
                 quarters.append("2021_I")
@@ -106,6 +111,7 @@ def add_to_database(mongo, array_of_dictionaries, type):
                     roman_numeral = increment_roman_numeral(roman_numeral)
                 quarters.append(f"{year}_{roman_numeral}")
 
+        # Creating the update document for MongoDB
         if type == "quarterly":
             update_document = {
                 "state": selected_document,
@@ -120,6 +126,7 @@ def add_to_database(mongo, array_of_dictionaries, type):
         else:
             raise ValueError("Invalid type passed")
 
+        # Creating the MongoDB update operations
         if document:
             bulk_updates.append(
                 UpdateOne({"state": selected_document}, {"$set": update_document})
@@ -131,6 +138,7 @@ def add_to_database(mongo, array_of_dictionaries, type):
                 )
             )
 
+        # Performing the bulk write to MongoDB
         if bulk_updates:
             collection.bulk_write(bulk_updates)
             return {"status": "SUCCESS"}
@@ -145,8 +153,7 @@ def add_to_database(mongo, array_of_dictionaries, type):
 
 def read_database(mongo, type):
     """
-    This function retrieves data from a MongoDB collection based on the provided type parameter (either "quarterly" or "monthly")
-
+    This function retrieves data from a MongoDB collection based on the provided type parameter (either "quarterly" or "monthly").
 
     The function determines the appropriate MongoDB collection based on the type parameter and retrieves documents from that collection.
 
@@ -168,7 +175,6 @@ def read_database(mongo, type):
 def register_user(mongo, bcrypt, userData):
     """
     This function registers a new user in a MongoDB collection by hashing the user's password and storing it securely.
-
 
     It checks if the provided username already exists in the database.
 
@@ -192,7 +198,6 @@ def register_user(mongo, bcrypt, userData):
 def login_user(mongo, bcrypt, userData):
     """
     This function handles user login by checking the provided username and password against the stored data in a MongoDB collection.
-
 
     It first checks if the provided username exists in the database.
     If the username exists, it compares the hashed password with the provided password using the bcrypt library.
